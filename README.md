@@ -1,2 +1,163 @@
 # CasoExpInDrivCierredeTurno
-CODIGO: CasoExpInDrivCierredeTurno
+# CODIGO: CasoExpInDrivCierredeTurno
+
+using System;
+
+class SimuladorTarifa
+{
+    static void Main(string[] args)
+    {
+        Console.WriteLine("========================================");
+        Console.WriteLine("        InDrive - Cierre de Turno       ");
+        Console.WriteLine("========================================\n");
+
+        Console.Write("Ingrese la cantidad de viajes realizados en el día: ");
+        int N = int.Parse(Console.ReadLine());
+
+        // Creación de arreglos paralelos
+        double[] tarifas = new double[N];
+        bool[] picoHora = new bool[N];
+
+        // Bucle Principal: Controlado por Contador (Regla 1)
+        for (int i = 0; i < N; i++)
+        {
+            Console.WriteLine($"\n>>>> REGISTRO DEL VIAJE {i + 1} <<<<");
+            
+            double distancia = 0;
+            int hora = 0;
+            int tipoVehiculo = 0;
+            bool datosValidos = false;
+
+            // Bucle Anidado: Validación de datos (Regla 2)
+            while (!datosValidos)
+            {
+                Console.Write("Distancia del viaje (km): ");
+                distancia = double.Parse(Console.ReadLine());
+
+                Console.Write("Hora de salida (0-23): ");
+                hora = int.Parse(Console.ReadLine());
+
+                Console.WriteLine("Tipo de vehículo: (1: Económico, 2: Confort, 3: Premium, 4: Moto)");
+                Console.Write("Seleccione opción: ");
+                tipoVehiculo = int.Parse(Console.ReadLine());
+
+                if (EsValido(distancia, hora, tipoVehiculo))
+                {
+                    datosValidos = true;
+                }
+                else
+                {
+                    Console.WriteLine("\n[ERROR] Datos inválidos. Por favor, ingrese valores correctos.\n");
+                }
+            }
+
+            // Guardar resultados en arreglos paralelos (Regla 3)
+            tarifas[i] = CalcularTarifa(distancia, hora, tipoVehiculo);
+            picoHora[i] = EsHoraPico(hora);
+            
+            Console.WriteLine($"¡Viaje {i + 1} registrado con éxito! Tarifa: S/ {tarifas[i]}");
+        }
+
+        // Mostrar Resumen Estadístico (Regla 4 y 5)
+        Console.WriteLine("\n========================================");
+        Console.WriteLine("       RESUMEN DE CIERRE DE TURNO       ");
+        Console.WriteLine("========================================");
+        Console.WriteLine($"Número de viajes realizados : {N}");
+        Console.WriteLine($"Total ganado en el día      : S/ {CalcularTotal(tarifas):F2}");
+        Console.WriteLine($"Tarifa promedio             : S/ {CalcularPromedio(tarifas):F2}");
+        Console.WriteLine($"Viaje más rentable (Máx)    : S/ {EncontrarMaximo(tarifas):F2}");
+        Console.WriteLine($"Viaje más económico (Mín)   : S/ {EncontrarMinimo(tarifas):F2}");
+        Console.WriteLine($"Cantidad de viajes en hora pico: {ContarHoraPico(picoHora)}");
+        Console.WriteLine("========================================");
+    }
+
+    // ================= FUNCIONES DE REFACTORIZACIÓN =================
+
+    static bool EsHoraPico(int hora)
+    {
+        // Se corrige el rango lógico (7-9 y 17-20 habitual de horas pico de tráfico)
+        return (hora >= 7 && hora <= 9) || (hora >= 17 && hora <= 20);
+    }
+
+    static bool EsValido(double distancia, int hora, int tipoVehiculo)
+    {
+        return distancia > 0 && (hora >= 0 && hora <= 23) && (tipoVehiculo >= 1 && tipoVehiculo <= 4);
+    }
+
+    static double CalcularTarifa(double distancia, int hora, int tipoVehiculo)
+    {
+        double tarifaBase = 0;
+        double costokm = 0;
+
+        switch (tipoVehiculo)
+        {
+            case 1: tarifaBase = 2.00; costokm = 1.50; break;
+            case 2: tarifaBase = 3.00; costokm = 2.00; break;
+            case 3: tarifaBase = 5.00; costokm = 3.00; break;
+            case 4: tarifaBase = 1.50; costokm = 1.00; break;
+        }
+
+        double subtotal = tarifaBase + (costokm * distancia);
+
+        if (EsHoraPico(hora))
+        {
+            subtotal *= 1.30; // Recargo del 30%
+        }
+
+        if (distancia > 15)
+        {
+            subtotal *= 0.95; // Descuento del 5%
+        }
+
+        double tarifaFinal = Math.Max(subtotal, 5.00); // Tarifa mínima de S/ 5.00
+        return Math.Round(tarifaFinal, 2);
+    }
+
+    // ================= FUNCIONES ESTADÍSTICAS =================
+
+    static double CalcularTotal(double[] arreglo)
+    {
+        double total = 0;
+        foreach (double tarifa in arreglo)
+        {
+            total += tarifa;
+        }
+        return total;
+    }
+
+    static double CalcularPromedio(double[] arreglo)
+    {
+        if (arreglo.Length == 0) return 0;
+        return CalcularTotal(arreglo) / arreglo.Length;
+    }
+
+    static double EncontrarMaximo(double[] arreglo)
+    {
+        double max = arreglo[0];
+        for (int i = 1; i < arreglo.Length; i++)
+        {
+            if (arreglo[i] > max) max = arreglo[i];
+        }
+        return max;
+    }
+
+    static double EncontrarMinimo(double[] arreglo)
+    {
+        double min = arreglo[0];
+        for (int i = 1; i < arreglo.Length; i++)
+        {
+            if (arreglo[i] < min) min = arreglo[i];
+        }
+        return min;
+    }
+
+    static int ContarHoraPico(bool[] arreglo)
+    {
+        int contador = 0;
+        foreach (bool esPico in arreglo)
+        {
+            if (esPico) contador++;
+        }
+        return contador;
+    }
+}
